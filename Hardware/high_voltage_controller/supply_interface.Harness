@@ -1,0 +1,2 @@
+CONTROL_BUS=C_Control,V_Control
+MONITOR_BUS=C_Monitor,V_Monitor

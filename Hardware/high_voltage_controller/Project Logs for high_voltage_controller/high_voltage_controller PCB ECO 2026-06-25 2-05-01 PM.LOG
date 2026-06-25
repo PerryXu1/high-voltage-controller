@@ -1,0 +1,51 @@
+Removed Member From Class: ClassName=U_SUPPLY_INTERFACE Member=C14
+Added Component: Designator=U2(SOIC8_D_TEX)
+Add component (AddParameter): Name = "Case/Package"; Value = "SOIC"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Category"; Value = "Amplifiers - Op Amps, Buffer, Instrumentation"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink1Description"; Value = "https://octopart.com:443/opatz8j6/c1?t=qNF0SmTfBXis5KuBjHu_0Lw95Gt-ppfX15eU3m0_OURFg7j8CzT1s6WowRPHsWIZbws3EfKsRzYBH_TRpeCcHToL-R8J8UZv9V6Wb1InHiIF8k8Y35NGcowJXJUYI1pnD5fADJ0R8GDNKVUWtLRHCqAGovzBPeiRsuxY5ipn9AhUhRmeYe6-OEpKfd42lu5pCk4HkhVEFD2Mur4YXRhcDV4Iflc8CkCZrl32D2A_m-0JnDbSslzSoAr2XFTf6lypRU0dY9KGNUak8fQ6OqAy5KWwSyRqBFS9rqoF33jhrK8rQgwd-x-Rf5GN-l31P0z1b0gEpQmPDdC7yH2zrnDiFm3LW_bWGcyYXUOocwlnj5ahD-Q0gTJopkT0i_QUuv2BzVg-w33TaJf5&src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink1URL"; Value = "https://octopart.com:443/opatz8j6/c1?t=qNF0SmTfBXis5KuBjHu_0Lw95Gt-ppfX15eU3m0_OURFg7j8CzT1s6WowRPHsWIZbws3EfKsRzYBH_TRpeCcHToL-R8J8UZv9V6Wb1InHiIF8k8Y35NGcowJXJUYI1pnD5fADJ0R8GDNKVUWtLRHCqAGovzBPeiRsuxY5ipn9AhUhRmeYe6-OEpKfd42lu5pCk4HkhVEFD2Mur4YXRhcDV4Iflc8CkCZrl32D2A_m-0JnDbSslzSoAr2XFTf6lypRU0dY9KGNUak8fQ6OqAy5KWwSyRqBFS9rqoF33jhrK8rQgwd-x-Rf5GN-l31P0z1b0gEpQmPDdC7yH2zrnDiFm3LW_bWGcyYXUOocwlnj5ahD-Q0gTJopkT0i_QUuv2BzVg-w33TaJf5&src-supplier=Texas+Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink2Description"; Value = "https://datasheet.octopart.com:443/TLV9002QDRQ1-Texas-Instruments-datasheet-164419143.pdf?src-supplier=Augswan"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink2URL"; Value = "https://datasheet.octopart.com:443/TLV9002QDRQ1-Texas-Instruments-datasheet-164419143.pdf?src-supplier=Augswan"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink3Description"; Value = "http://sigma.octopart.com:80/reach_statement/Texas-Instruments-company-64.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink3URL"; Value = "http://sigma.octopart.com:80/reach_statement/Texas-Instruments-company-64.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink4Description"; Value = "http://sigma.octopart.com:80/conflict_mineral_statement/Texas-Instruments-company-63.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "ComponentLink4URL"; Value = "http://sigma.octopart.com:80/conflict_mineral_statement/Texas-Instruments-company-63.pdf?src-supplier=Compliance+Statements"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Height"; Value = "1.75mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Length"; Value = "4.9mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Lifecycle Status"; Value = "Production"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer"; Value = "Texas Instruments"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Lifecycle Status"; Value = "ACTIVE"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Manufacturer Part Number"; Value = "TLV9002QDRQ1"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Number of Channels"; Value = "2"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pins"; Value = "8"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Pricing"; Value = "1=0.85, 10=0.605, 25=0.5448, 100=0.4781, 250=0.44628, 500=0.42712, 1000=0.41157 (USD)"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "RoHS"; Value = "Compliant"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Stock"; Value = "6623"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier"; Value = "DigiKey"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier 1"; Value = "DigiKey"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier Part Number"; Value = "296-TLV9002QDRQ1CT-ND"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Supplier Part Number 1"; Value = "296-TLV9002QDRQ1CT-ND"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Thickness"; Value = "1.58mm"; VariantName = "[No Variations]"
+Add component (AddParameter): Name = "Width"; Value = "3.91mm"; VariantName = "[No Variations]"
+Added Pin To Net: NetName=NetJ2_1 Pin=U2-1
+Added Pin To Net: NetName=NetR10_1 Pin=U2-2
+Added Pin To Net: NetName=5V Pin=U2-3
+Added Pin To Net: NetName=GND Pin=U2-4
+Added Pin To Net: NetName=5V Pin=U2-5
+Added Pin To Net: NetName=NetR7_2 Pin=U2-6
+Added Pin To Net: NetName=NetJ2_2 Pin=U2-7
+Added Pin To Net: NetName=5V Pin=U2-8
+Added Member To Class: ClassName=U_SUPPLY_INTERFACE Member=Component C12 1u
+Added Member To Class: ClassName=U_POWER Member=Component C13 10u
+Added Member To Class: ClassName=U_POWER Member=Component C15 1u
+Added Member To Class: ClassName=U_POWER Member=Component C16 10u
+Added Member To Class: ClassName=U_USB_INTERFACE Member=Component C18 100n
+Added Member To Class: ClassName=U_USB_INTERFACE Member=Component C19 100n
+Added Member To Class: ClassName=U_USB_INTERFACE Member=Component C20 4.7u
+Added Member To Class: ClassName=U_USB_INTERFACE Member=Component C22 4.7u
+Added Member To Class: ClassName=U_USB_INTERFACE Member=Component C23 100n
+Added Member To Class: ClassName=U_USB_INTERFACE Member=Component C25 10u
+Added Member To Class: ClassName=U_USB_INTERFACE Member=Component J3 USB4105-GF-A
+Added Member To Class: ClassName=U_SUPPLY_INTERFACE Member=Component R7 10k
+Added Member To Class: ClassName=U_SUPPLY_INTERFACE Member=Component R11 10k
+Added Member To Class: ClassName=U_SUPPLY_INTERFACE Member=Component U2 TLV9002QDRQ1

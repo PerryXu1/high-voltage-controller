@@ -1,3 +1,3 @@
 CONTROL_BUS=C_Control,V_Control
 MCU_UART=MCU_TX,MCU_RX
-MONITOR_BUS=V_Monitor,C_Monitor
+MONITOR_BUS=C_Monitor,V_Monitor

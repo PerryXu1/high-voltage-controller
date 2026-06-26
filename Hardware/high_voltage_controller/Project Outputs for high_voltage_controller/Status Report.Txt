@@ -1,22 +1,14 @@
-Output: Gerber Files
-Type  : Gerber
-From  : Variant [[No Variations]] of Project [high_voltage_controller.PrjPcb]
-   Generated File[high_voltage_controller.GTO]
-   Generated File[high_voltage_controller.GTP]
-   Generated File[high_voltage_controller.GTS]
-   Generated File[high_voltage_controller.GTL]
-   Generated File[high_voltage_controller.G1]
-   Generated File[high_voltage_controller.G2]
-   Generated File[high_voltage_controller.GBL]
-   Generated File[high_voltage_controller.GBS]
-   Generated File[high_voltage_controller.GBP]
-   Generated File[high_voltage_controller.GBO]
-   Generated File[high_voltage_controller.GM]
-   Generated File[high_voltage_controller.EXTREP]
-   Generated File[high_voltage_controller.REP]
+Output: NC Drill Files
+Type  : NC Drill
+From  : Project [high_voltage_controller.PrjPcb]
+   Generated File[high_voltage_controller-RoundHoles-Plated.TXT]
+   Generated File[high_voltage_controller-RoundHoles-NonPlated.TXT]
+   Generated File[high_voltage_controller-SlotHoles-Plated.TXT]
+   Generated File[high_voltage_controller.LDP]
+   Generated File[high_voltage_controller.DRR]
 
 
-Files Generated   : 13
+Files Generated   : 5
 Documents Printed : 0
 
-Finished Output Generation At 1:46:17 PM On 2026-06-26
+Finished Output Generation At 3:19:40 PM On 2026-06-26

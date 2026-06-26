@@ -270,55 +270,92 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=
 
+[Document14]
+DocumentPath=CAMtastic2.Cam
+AnnotationEnabled=1
+AnnotateStartValue=1
+AnnotationIndexControlEnabled=0
+AnnotateSuffix=
+AnnotateScope=All
+AnnotateOrder=-1
+DoLibraryUpdate=1
+DoDatabaseUpdate=1
+ClassGenCCAutoEnabled=1
+ClassGenCCAutoRoomEnabled=0
+ClassGenNCAutoScope=None
+DItemRevisionGUID=
+GenerateClassCluster=0
+DocumentUniqueId=
+
 [GeneratedDocument1]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.EXTREP
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller-RoundHoles-NonPlated.TXT
 DItemRevisionGUID=
 
 [GeneratedDocument2]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.G1
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller-RoundHoles-Plated.TXT
 DItemRevisionGUID=
 
 [GeneratedDocument3]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.G2
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller-SlotHoles-Plated.TXT
 DItemRevisionGUID=
 
 [GeneratedDocument4]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GBL
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.DRR
 DItemRevisionGUID=
 
 [GeneratedDocument5]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GBO
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.EXTREP
 DItemRevisionGUID=
 
 [GeneratedDocument6]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GBP
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.G1
 DItemRevisionGUID=
 
 [GeneratedDocument7]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GBS
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.G2
 DItemRevisionGUID=
 
 [GeneratedDocument8]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GM
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GBL
 DItemRevisionGUID=
 
 [GeneratedDocument9]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GTL
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GBO
 DItemRevisionGUID=
 
 [GeneratedDocument10]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GTO
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GBP
 DItemRevisionGUID=
 
 [GeneratedDocument11]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GTP
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GBS
 DItemRevisionGUID=
 
 [GeneratedDocument12]
-DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GTS
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GM
 DItemRevisionGUID=
 
 [GeneratedDocument13]
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GTL
+DItemRevisionGUID=
+
+[GeneratedDocument14]
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GTO
+DItemRevisionGUID=
+
+[GeneratedDocument15]
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GTP
+DItemRevisionGUID=
+
+[GeneratedDocument16]
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.GTS
+DItemRevisionGUID=
+
+[GeneratedDocument17]
+DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.LDP
+DItemRevisionGUID=
+
+[GeneratedDocument18]
 DocumentPath=Project Outputs for high_voltage_controller\high_voltage_controller.REP
 DItemRevisionGUID=
 
@@ -615,6 +652,10 @@ OutputName8=NC Drill Files
 OutputDocumentPath8=
 OutputVariantName8=
 OutputDefault8=0
+Configuration8_Name1=ForceUpdateSettings
+Configuration8_Item1=False
+Configuration8_Name2=OutputConfigurationParameter1
+Configuration8_Item2=BoardEdgeRoutToolDia=2000000|GenerateBoardEdgeRout=False|GenerateDrilledSlotsG85=False|GenerateEIADrillFile=False|GenerateSeparatePlatedNonPlatedFiles=True|GenerateSeparateViaTypeFiles=False|GenerateToolsByDrillSymbols=False|NumberOfDecimals=5|NumberOfUnits=2|OptimizeChangeLocationCommands=True|OriginPosition=Absolute|Record=DrillView|Units=Imperial|ZeroesMode=KeepLeadingAndTrailingZeroes|DocumentPath=C:\Users\Restoflab\Documents\2026_Summer_Perry\Development\high-voltage-controller\Hardware\high_voltage_controller\high_voltage_controller.PcbDoc
 OutputType9=ODB
 OutputName9=ODB++ Files
 OutputDocumentPath9=

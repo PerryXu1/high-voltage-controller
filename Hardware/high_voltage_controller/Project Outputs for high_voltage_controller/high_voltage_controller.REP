@@ -2,22 +2,15 @@
 FileName = high_voltage_controller.GBR
 AutoAperture = True
 *************************************************************
-Generating : Bottom Paste
-      File : high_voltage_controller.GBP
+Generating : Bottom Overlay
+      File : high_voltage_controller.GBO
 
-    Adding Layer      : Bottom Paste
-
-    Adding Layer      : Signal 2
-
-    Adding Layer      : Multi-Layer
+    Adding Layer      : Bottom Overlay
 
 
 Used DCodes :
-    D19
-    D20
-    D22
-    D23
-    D27
+    D12
+    D13
 *************************************************************
 
 *************************************************************
@@ -58,22 +51,31 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
-Generating : Bottom Solder
-      File : high_voltage_controller.GBS
+Generating : Top Overlay
+      File : high_voltage_controller.GTO
 
-    Adding Layer      : Bottom Solder
+    Adding Layer      : Top Overlay
 
-    Adding Layer      : Signal 2
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D13
+    D14
+    D15
+*************************************************************
+
+*************************************************************
+Generating : Power
+      File : high_voltage_controller.G2
+
+    Adding Layer      : Power
 
     Adding Layer      : Multi-Layer
 
 
 Used DCodes :
-    D19
-    D20
-    D22
-    D23
-    D27
     D42
     D43
     D44
@@ -132,31 +134,24 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
-Generating : Bottom Overlay
-      File : high_voltage_controller.GBO
+Generating : Ground
+      File : high_voltage_controller.G1
 
-    Adding Layer      : Bottom Overlay
+    Adding Layer      : Ground
 
-
-Used DCodes :
-    D12
-    D13
-*************************************************************
-
-*************************************************************
-Generating : Top Overlay
-      File : high_voltage_controller.GTO
-
-    Adding Layer      : Top Overlay
+    Adding Layer      : Multi-Layer
 
 
 Used DCodes :
-    D10
-    D11
-    D12
-    D13
-    D14
-    D15
+    D42
+    D43
+    D44
+    D45
+    D46
+    D47
+    D48
+    D49
+    D50
 *************************************************************
 
 *************************************************************
@@ -191,45 +186,22 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
-Generating : Power
-      File : high_voltage_controller.G2
+Generating : Bottom Paste
+      File : high_voltage_controller.GBP
 
-    Adding Layer      : Power
+    Adding Layer      : Bottom Paste
 
-    Adding Layer      : Multi-Layer
-
-
-Used DCodes :
-    D42
-    D43
-    D44
-    D45
-    D46
-    D47
-    D48
-    D49
-    D50
-*************************************************************
-
-*************************************************************
-Generating : Ground
-      File : high_voltage_controller.G1
-
-    Adding Layer      : Ground
+    Adding Layer      : Signal 2
 
     Adding Layer      : Multi-Layer
 
 
 Used DCodes :
-    D42
-    D43
-    D44
-    D45
-    D46
-    D47
-    D48
-    D49
-    D50
+    D19
+    D20
+    D22
+    D23
+    D27
 *************************************************************
 
 *************************************************************
@@ -280,6 +252,34 @@ Used DCodes :
     D52
     D53
     D54
+*************************************************************
+
+*************************************************************
+Generating : Bottom Solder
+      File : high_voltage_controller.GBS
+
+    Adding Layer      : Bottom Solder
+
+    Adding Layer      : Signal 2
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D19
+    D20
+    D22
+    D23
+    D27
+    D42
+    D43
+    D44
+    D45
+    D46
+    D47
+    D48
+    D49
+    D50
 *************************************************************
 
 *************************************************************

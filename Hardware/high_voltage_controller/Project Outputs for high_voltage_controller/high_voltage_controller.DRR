@@ -1,0 +1,21 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: high_voltage_controller.PcbDoc   2026-06-26  3:19:40 PM
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Signal 1 to Signal 2
+ASCII Plated RoundHoles File : high_voltage_controller-RoundHoles-Plated.TXT
+ASCII Non-Plated RoundHoles File : high_voltage_controller-RoundHoles-NonPlated.TXT
+ASCII Plated SlotHoles File : high_voltage_controller-SlotHoles-Plated.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      12mil (0.305mm)                                           Round             85        PTH        16.09inch (408.71mm)
+T2      24mil (0.6mm)                                             Slot              4         PTH        1.50inch (38.14mm)
+T3      39mil (1mm)                                               Round             4         PTH        0.30inch (7.62mm)
+T4      43mil (1.09mm)                                            Round             15        PTH        1.54inch (39.17mm)
+T5      126mil (3.2mm)                                            Round             2         PTH        1.31inch (33.30mm)
+T6      26mil (0.65mm)                                            Round             2         NPTH       0.23inch (5.78mm)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              112
+
+Total Processing Time (hh:mm:ss) : 00:00:00

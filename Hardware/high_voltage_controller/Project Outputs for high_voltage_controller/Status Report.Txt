@@ -1,0 +1,22 @@
+Output: Gerber Files
+Type  : Gerber
+From  : Variant [[No Variations]] of Project [high_voltage_controller.PrjPcb]
+   Generated File[high_voltage_controller.GTO]
+   Generated File[high_voltage_controller.GTP]
+   Generated File[high_voltage_controller.GTS]
+   Generated File[high_voltage_controller.GTL]
+   Generated File[high_voltage_controller.G1]
+   Generated File[high_voltage_controller.G2]
+   Generated File[high_voltage_controller.GBL]
+   Generated File[high_voltage_controller.GBS]
+   Generated File[high_voltage_controller.GBP]
+   Generated File[high_voltage_controller.GBO]
+   Generated File[high_voltage_controller.GM]
+   Generated File[high_voltage_controller.EXTREP]
+   Generated File[high_voltage_controller.REP]
+
+
+Files Generated   : 13
+Documents Printed : 0
+
+Finished Output Generation At 1:46:17 PM On 2026-06-26

@@ -104,6 +104,12 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
+  static uint16_t test_voltage[1] = {2482};
+
+  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t*)test_voltage, 1, DAC_ALIGN_12B_R);
+  
+  HAL_TIM_Base_Start(&htim6);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

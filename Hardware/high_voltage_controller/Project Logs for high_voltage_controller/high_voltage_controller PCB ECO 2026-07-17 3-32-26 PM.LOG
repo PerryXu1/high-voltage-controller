@@ -1,0 +1,8 @@
+Removed Pin From Net: NetName=GND Pin=PS1-1
+Removed Pin From Net: NetName=NetC14_1 Pin=PS1-2
+Removed Pin From Net: NetName=USB_GND Pin=PS1-3
+Removed Pin From Net: NetName=VBUS Pin=PS1-4
+Added Pin To Net: NetName=USB_GND Pin=PS1-1
+Added Pin To Net: NetName=VBUS Pin=PS1-2
+Added Pin To Net: NetName=GND Pin=PS1-3
+Added Pin To Net: NetName=NetC14_1 Pin=PS1-4

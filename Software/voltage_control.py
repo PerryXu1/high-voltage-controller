@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QHBoxLayout,
 import pyqtgraph as pg
 from dialogs import (ConstantDialog, LinearDialog, SineDialog, QuadraticDialog, ExponentialDialog,
                      ExponentialAsymptoteDialog, LogarithmicDialog, CustomDialog)
+from voltage_model import VoltageModel
 
 class VoltageControlGUI(QMainWindow):
     """Class that creates and displays the voltage control GUI
@@ -68,6 +69,10 @@ class VoltageControlGUI(QMainWindow):
         main_layout.addWidget(self.plot_widget, stretch=6)
         main_layout.addLayout(middle_layout, stretch=2)
         main_layout.addLayout(right_layout, stretch=1)
+        
+        self.model = VoltageModel()
+        
+        self.plot_line = self.plot_widget.plot([], [], pen=pg.mkPen('b', width=2))
 
     def on_available_item_clicked(self, item):
         function_name = item.text()

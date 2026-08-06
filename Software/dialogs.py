@@ -237,7 +237,41 @@ class LinearDialog(SegmentDialog):
         self.param_first.setValue(self.previous_v_end)
         self.trigger_derived_update()
 
+class QuadraticDialog(SegmentDialog):
+    """Dialog for a quadratic function V = at^2 + bt + c
+    
+    :param previous_v_end: The final voltage value of the previous segment
+    :type previous_v_end: float
+    :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
+    :type max_time: float
+    :param parent: Parent
+    :type parent: SegmentDialog
+    """
+    
+    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent = None):
+        super().__init__("Quadratic", "V = a*t<sup>2</sup> + b*t + c", previous_v_end, max_time, parent)
 
+    def build_parameters(self):
+        self.param_a = self.create_spinbox()
+        self.param_b = self.create_spinbox()
+        self.param_c = self.create_spinbox()
+        self.eq_layout.addRow("a:", self.param_a)
+        self.eq_layout.addRow("b:", self.param_b)
+        self.eq_layout.addRow("c:", self.param_c)
+
+        self.param_first = self.create_spinbox()
+        self.param_last = self.create_spinbox()
+        self.param_vx = self.create_spinbox()
+        self.param_vy = self.create_spinbox()
+        self.derived_layout.addRow("First Value:", self.param_first)
+        self.derived_layout.addRow("Last Value:", self.param_last)
+        self.derived_layout.addRow("Vertex X (relative):", self.param_vx)
+        self.derived_layout.addRow("Vertex Y:", self.param_vy)
+
+    def match_previous(self):
+        self.param_c.setValue(self.previous_v_end)
+        self.trigger_eq_update()
+        
 class SineDialog(SegmentDialog):
     """Dialog for a sine/cosine function V = a sin(b(t - c)) + d | V = a cos(b(t - c)) + d
     
@@ -329,42 +363,7 @@ class SineDialog(SegmentDialog):
             
         required_d = self.previous_v_end - current_start_v
         self.param_d.setValue(required_d)
-
-class QuadraticDialog(SegmentDialog):
-    """Dialog for a quadratic function V = at^2 + bt + c
-    
-    :param previous_v_end: The final voltage value of the previous segment
-    :type previous_v_end: float
-    :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
-    :type max_time: float
-    :param parent: Parent
-    :type parent: SegmentDialog
-    """
-    
-    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent = None):
-        super().__init__("Quadratic", "V = a*t<sup>2</sup> + b*t + c", previous_v_end, max_time, parent)
-
-    def build_parameters(self):
-        self.param_a = self.create_spinbox()
-        self.param_b = self.create_spinbox()
-        self.param_c = self.create_spinbox()
-        self.eq_layout.addRow("a:", self.param_a)
-        self.eq_layout.addRow("b:", self.param_b)
-        self.eq_layout.addRow("c:", self.param_c)
-
-        self.param_first = self.create_spinbox()
-        self.param_last = self.create_spinbox()
-        self.param_vx = self.create_spinbox()
-        self.param_vy = self.create_spinbox()
-        self.derived_layout.addRow("First Value:", self.param_first)
-        self.derived_layout.addRow("Last Value:", self.param_last)
-        self.derived_layout.addRow("Vertex X (relative):", self.param_vx)
-        self.derived_layout.addRow("Vertex Y:", self.param_vy)
-
-    def match_previous(self):
-        self.param_c.setValue(self.previous_v_end)
-        self.trigger_eq_update()
-
+        
 class ExponentialDialog(SegmentDialog):
     """Dialog for an exponential function V = a e^(kt) + c
     

@@ -1,4 +1,4 @@
-import math
+import numpy as np
 from dataclasses import dataclass
 from enum import Enum
 
@@ -29,7 +29,7 @@ class Segment:
     segment_type: SegmentType
     min_time: float
     max_time: float
-    parameters: list[float]
+    parameters: dict[str, float]
 
 class VoltageModel:
     """Model of the voltage-time signal created through the GUI
@@ -122,9 +122,9 @@ class VoltageModel:
         :return: The voltage at the input time
         :rtype: float
         """
-        t = t_actual - segment["t_min"]
-        p = segment["params"]
-        s_type = segment["type"]
+        t = t_actual - segment.min_time
+        p = segment.parameters
+        s_type = segment.segment_type
 
         try:
             if s_type == "Constant":
@@ -138,20 +138,20 @@ class VoltageModel:
                 
             elif s_type == "Sine":
                 if p["trig_type"] == "Sine":
-                    return p["a"] * math.sin(p["b"] * (t - p["c"])) + p["d"]
+                    return p["a"] * np.sin(p["b"] * (t - p["c"])) + p["d"]
                 else:
-                    return p["a"] * math.cos(p["b"] * (t - p["c"])) + p["d"]
+                    return p["a"] * np.cos(p["b"] * (t - p["c"])) + p["d"]
             
             elif s_type == "Logarithmic":
-                return p["a"] * (math.log(t + p["h"]) / math.log(p["b"])) + p["k"]
+                return p["a"] * (np.log(t + p["h"]) / np.log(p["b"])) + p["k"]
                 
             elif s_type == "Exponential Asymptote":
-                return p["a"] * (1 - math.exp(-t / p["tau"])) + p["c"]
+                return p["a"] * (1 - np.exp(-t / p["tau"])) + p["c"]
                 
             elif s_type == "Custom":
                 # Ensure custom expressions are evaluated safely
-                allowed = {"t": t, "sin": math.sin, "cos": math.cos, "exp": math.exp, 
-                           "log": math.log, "sqrt": math.sqrt, "pi": math.pi, "e": math.e}
+                allowed = {"t": t, "sin": np.sin, "cos": np.cos, "exp": np.exp, 
+                           "log": np.log, "sqrt": np.sqrt, "pi": np.pi, "e": np.e}
                 return float(eval(p["expr"], {"__builtins__": None}, allowed)) + p["offset"]
                 
         except Exception as e:

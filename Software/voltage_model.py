@@ -23,8 +23,8 @@ class Segment:
     :type min_time: float
     :param max_time: The right limit of the segment
     :type max_time: float
-    :param parameters: The function parameters
-    :type parameters: list[float]
+    :param parameters: Dictionary of equation parameters (e.g., {"a": 1.0, "b": 2.0})
+    :type parameters: dict[str, float]
     """
     segment_type: SegmentType
     min_time: float
@@ -32,153 +32,116 @@ class Segment:
     parameters: dict[str, float]
 
 class VoltageModel:
-    """Model of the voltage-time signal created through the GUI
+    """Model of the voltage-time signal created through the GUI"""
     
-    :param segments: A list storing each segment of the voltage-time signal
-    :type segments: list[Segments]
-    """
-    
-    segments: list[Segment]
     def __init__(self):
-        self.segments = []
+        self.segments: list[Segment] = []
 
     def add_segment(self, segment: Segment) -> None:
-        """Adds a segment dictionary to the list and sorts by start time.
-        
-        :param segment: The segment to be added
-        :type segment: Segment
-        """
+        """Adds a segment to the list, handling overlap and sorting."""
         if segment.min_time >= segment.max_time:
             return
 
         new_pieces = [segment]
 
-        # Checking for segment overlap
         for old_segment in self.segments:
             next_pieces = []
             for p in new_pieces:
-                # Check that segment does not overlap com
                 if not (old_segment.min_time <= p.min_time and old_segment.max_time >= p.max_time):
-                    # Case: no overlap
+                    # No overlap
                     if p.max_time <= old_segment.min_time or p.min_time >= old_segment.max_time:
                         next_pieces.append(p)
-
-                    # Case: piece spans overlapping; only take left section
+                    # Spans overlapping; take left section
                     elif p.min_time < old_segment.min_time and p.max_time > old_segment.max_time:
                         left_piece = Segment(
                             segment_type=p.segment_type,
                             min_time=p.min_time,
                             max_time=old_segment.min_time,
-                            parameters=list(p.parameters)
+                            parameters=dict(p.parameters)
                         )
+                        if hasattr(p, 'expression'):
+                            left_piece.expression = p.expression
                         next_pieces.append(left_piece)
-
-                    # Case: overlaps left side of existing segment
+                    # Overlaps left side of existing segment
                     elif p.min_time < old_segment.min_time < p.max_time <= old_segment.max_time:
                         p.max_time = old_segment.min_time
                         next_pieces.append(p)
-
-                    # Case: overlaps right side of existing segment
+                    # Overlaps right side of existing segment
                     elif old_segment.min_time <= p.min_time < old_segment.max_time < p.max_time:
                         p.min_time = old_segment.max_time
                         next_pieces.append(p)
-
             new_pieces = next_pieces
 
         self.segments.extend(new_pieces)
         self.segments.sort(key=lambda s: s.min_time)
         
-
     def get_voltage(self, t_actual: float) -> float:
-        """Polls the equation for a specific time to get the voltage
-        
-        :param t_actual: The actual absolute time that the voltage signal is polled at
-        :type t_actual: float
-        
-        :return: The voltage at the input time
-        :rtype: float
-        """
+        """Polls the equation for a specific time to get the voltage."""
         if not self.segments:
-            return 0.0
+            return np.nan
 
         for segment in self.segments:
             if segment.min_time <= t_actual <= segment.max_time:
                 return self._calculate_voltage(segment, t_actual)
-        
-        last_segment = self.segments[-1]
-        if t_actual > last_segment.max_time:
-            return self._calculate_voltage(last_segment, last_segment.max_time)
 
-        return 0.0
+        return np.nan
 
     def _calculate_voltage(self, segment: Segment, t_actual: float) -> float:
-        """Routes to the correct math equation based on segment type
-        
-        :param segment: The segment that the voltage is calculated on
-        :type segment: Segment
-        :param t_actual: The actual absolute time the voltage is calculated at
-        :type t_actual: float
-        
-        :return: The voltage at the input time
-        :rtype: float
-        """
+        """Routes to the correct math equation based on segment type using dictionary keys."""
         t = t_actual - segment.min_time
         p = segment.parameters
         s_type = segment.segment_type
 
         try:
-            if s_type == "Constant":
-                return p.a
+            if s_type == SegmentType.CONSTANT:
+                return p["a"]
             
-            elif s_type == "Linear":
+            elif s_type == SegmentType.LINEAR:
                 return p["a"] * t + p["b"]
                 
-            elif s_type == "Quadratic":
+            elif s_type == SegmentType.QUADRATIC:
                 return p["a"] * (t ** 2) + p["b"] * t + p["c"]
                 
-            elif s_type == "Sine":
-                if p["trig_type"] == "Sine":
+            elif s_type == SegmentType.SINE:
+                is_cos = p.get("is_cos", 0.0)
+                if is_cos == 0.0:
                     return p["a"] * np.sin(p["b"] * (t - p["c"])) + p["d"]
                 else:
                     return p["a"] * np.cos(p["b"] * (t - p["c"])) + p["d"]
             
-            elif s_type == "Logarithmic":
+            elif s_type == SegmentType.EXPONENTIAL:
+                return p["a"] * np.exp(p["k"] * t) + p["c"]
+
+            elif s_type == SegmentType.EXPONENTIAL_ASYMPTOTE:
+                return p["a"] * (1 - np.exp(-t / p["tau"])) + p["c"]
+
+            elif s_type == SegmentType.LOGARITHM:
                 return p["a"] * (np.log(t + p["h"]) / np.log(p["b"])) + p["k"]
                 
-            elif s_type == "Exponential Asymptote":
-                return p["a"] * (1 - np.exp(-t / p["tau"])) + p["c"]
-                
-            elif s_type == "Custom":
-                # Ensure custom expressions are evaluated safely
+            elif s_type == SegmentType.CUSTOM:
                 allowed = {"t": t, "sin": np.sin, "cos": np.cos, "exp": np.exp, 
                            "log": np.log, "sqrt": np.sqrt, "pi": np.pi, "e": np.e}
-                return float(eval(p["expr"], {"__builtins__": None}, allowed)) + p["offset"]
+                expr = getattr(segment, 'expression', '0')
+                return float(eval(expr, {"__builtins__": None}, allowed)) + p.get("offset", 0.0)
                 
         except Exception as e:
-            print(f"Math error in segment {s_type}: {e}")
+            print(f"Math error in segment {s_type.name}: {e}")
             return 0.0
             
         return 0.0
 
-def generate_plot_data(self, max_time: float, step_size: float = 0.5):
-        """Generates arrays of T and V data points for the GUI graph or PCB based on step size
-        
-        :param max_time: The maximum time of the voltage signal
-        :type max_time: float
-        :param step_size: the time between signal pollings, in minutes
-        :type step_size: float
-        """
+    def generate_plot_data(self, max_time: float, step_size: float = 0.5):
+        """Generates arrays of T and V data points for the GUI graph."""
         if not self.segments or step_size <= 0:
             return [], []
 
         t_data = []
         v_data = []
-
         num_steps = int(max_time / step_size)
 
         for i in range(num_steps + 1):
             t = i * step_size
             t_data.append(t)
-            v_data.append(self.get_voltage_at(t))
+            v_data.append(self.get_voltage(t))
 
         return t_data, v_data

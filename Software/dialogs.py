@@ -16,17 +16,20 @@ class SegmentDialog(QDialog):
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
     def __init__(self, function_name: str, equation_html: str, previous_v_end: float = 0.0,
-                 max_time: float = 60.0, parent = None):
+                 max_time: float = 60.0, max_segment_time: float = 0.0, parent = None):
         super().__init__(parent)
         self.setWindowTitle(f"Add {function_name} Segment")
         self.setMinimumWidth(500)
         
         self.previous_v_end = previous_v_end
         self.max_time = max_time
+        self.max_segment_time = max_segment_time
         
         self._is_updating = False
 
@@ -47,7 +50,7 @@ class SegmentDialog(QDialog):
         # Limits
         limits_group = QGroupBox("Time Limits")
         limits_layout = QHBoxLayout()
-        self.t_min_input = self.create_spinbox(0, self.max_time, 0.0) # Default to 0, ideally passed from main GUI
+        self.t_min_input = self.create_spinbox(0, self.max_time, self.max_segment_time)
         self.t_max_input = self.create_spinbox(0, self.max_time, self.max_time)
         limits_layout.addWidget(QLabel("Start Time (t_min):"))
         limits_layout.addWidget(self.t_min_input)
@@ -133,12 +136,15 @@ class ConstantDialog(SegmentDialog):
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
-    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent = None):
+    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0,
+                 max_segment_time: float = 0.0, parent = None):
         equation_html = "V = a"
-        super().__init__("Constant", equation_html, previous_v_end, max_time, parent)
+        super().__init__("Constant", equation_html, previous_v_end, max_time, max_segment_time, parent)
 
     def build_parameters(self):
         # Equation Parameter
@@ -190,11 +196,14 @@ class LinearDialog(SegmentDialog):
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
-    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent = None):
-        super().__init__("Linear", "V = a*t + b", previous_v_end, max_time, parent)
+    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0,
+                 max_segment_time: float = 0.0, parent = None):
+        super().__init__("Linear", "V = a*t + b", previous_v_end, max_time, max_segment_time, parent)
 
     def build_parameters(self):
         # Equation Parameters
@@ -237,40 +246,98 @@ class LinearDialog(SegmentDialog):
         self.param_first.setValue(self.previous_v_end)
         self.trigger_derived_update()
 
+
 class QuadraticDialog(SegmentDialog):
-    """Dialog for a quadratic function V = at^2 + bt + c
+    """Dialog for a quadratic function y = a*x^2 + b*x + c
     
     :param previous_v_end: The final voltage value of the previous segment
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
-    
-    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent = None):
-        super().__init__("Quadratic", "V = a*t<sup>2</sup> + b*t + c", previous_v_end, max_time, parent)
+    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0,
+                 max_segment_time: float = 0.0, parent=None):
+        super().__init__("Quadratic", "y = a*x^2 + b*x + c", previous_v_end, max_time, max_segment_time, parent)
 
     def build_parameters(self):
+        # Equation Parameters
         self.param_a = self.create_spinbox()
         self.param_b = self.create_spinbox()
         self.param_c = self.create_spinbox()
+
         self.eq_layout.addRow("a:", self.param_a)
         self.eq_layout.addRow("b:", self.param_b)
         self.eq_layout.addRow("c:", self.param_c)
 
+        # Derived Parameters
         self.param_first = self.create_spinbox()
         self.param_last = self.create_spinbox()
-        self.param_vx = self.create_spinbox()
-        self.param_vy = self.create_spinbox()
+        self.param_vertex_y = self.create_spinbox()
+        self.param_vertex_x = self.create_spinbox()
+
         self.derived_layout.addRow("First Value:", self.param_first)
         self.derived_layout.addRow("Last Value:", self.param_last)
-        self.derived_layout.addRow("Vertex X (relative):", self.param_vx)
-        self.derived_layout.addRow("Vertex Y:", self.param_vy)
+        self.derived_layout.addRow("Vertex Value:", self.param_vertex_y)
+        self.derived_layout.addRow("Vertex Position:", self.param_vertex_x)
+
+        # Connections
+        self.param_a.valueChanged.connect(self.trigger_eq_update)
+        self.param_b.valueChanged.connect(self.trigger_eq_update)
+        self.param_c.valueChanged.connect(self.trigger_eq_update)
+
+        self.param_first.valueChanged.connect(self.trigger_derived_update)
+        self.param_vertex_y.valueChanged.connect(self.trigger_derived_update)
+        self.param_vertex_x.valueChanged.connect(self.trigger_derived_update)
+
+    def update_derived_from_eq(self):
+        t_len = max(0.01, self.t_max_input.value() - self.t_min_input.value())
+        a = self.param_a.value()
+        b = self.param_b.value()
+        c = self.param_c.value()
+
+        first = c
+        last = a * (t_len ** 2) + b * t_len + c
+
+        if a != 0:
+            vertex_x = -b / (2.0 * a)
+            vertex_y = c - (b ** 2) / (4.0 * a)
+        else:
+            vertex_x = t_len / 2.0
+            vertex_y = c
+
+        self.param_first.setValue(first)
+        self.param_last.setValue(last)
+        self.param_vertex_y.setValue(vertex_y)
+        self.param_vertex_x.setValue(vertex_x)
+
+    def update_eq_from_derived(self):
+        t_len = max(0.01, self.t_max_input.value() - self.t_min_input.value())
+        first = self.param_first.value()
+        vertex_y = self.param_vertex_y.value()
+        vertex_x = self.param_vertex_x.value()
+
+        if abs(vertex_x) < 1e-6:
+            vertex_x = 0.001
+
+        c = first
+        a = (first - vertex_y) / (vertex_x ** 2)
+        b = -2.0 * a * vertex_x
+
+        self.param_c.setValue(c)
+        self.param_a.setValue(a)
+        self.param_b.setValue(b)
+
+        last = a * (t_len ** 2) + b * t_len + c
+        self.param_last.setValue(last)
 
     def match_previous(self):
-        self.param_c.setValue(self.previous_v_end)
-        self.trigger_eq_update()
+        """Updates the first value of this segment to equal the final value of the previous segment"""
+        self.param_first.setValue(self.previous_v_end)
+        self.trigger_derived_update()
         
 class SineDialog(SegmentDialog):
     """Dialog for a sine/cosine function V = a sin(b(t - c)) + d | V = a cos(b(t - c)) + d
@@ -279,11 +346,14 @@ class SineDialog(SegmentDialog):
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
-    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent = None):
-        super().__init__("Sine", "V = a*sin(b(t - c)) + d", previous_v_end, max_time, parent)
+    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0,
+                 max_segment_time: float = 0.0, parent = None):
+        super().__init__("Sine", "V = a*sin(b(t - c)) + d", previous_v_end, max_time, max_segment_time, parent)
 
     def build_parameters(self):
         # Base Function (Sine or Cosine)
@@ -371,11 +441,14 @@ class ExponentialDialog(SegmentDialog):
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
-    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent = None):
-        super().__init__("Exponential", "V = a * e<sup>k*t</sup> + c", previous_v_end, max_time, parent)
+    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0,
+                 max_segment_time: float = 0.0, parent = None):
+        super().__init__("Exponential", "V = a * e<sup>k*t</sup> + c", previous_v_end, max_time, max_segment_time, parent)
 
     def build_parameters(self):
         self.type_combo = QComboBox()
@@ -404,12 +477,15 @@ class ExponentialAsymptoteDialog(SegmentDialog):
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
-    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent = None):
+    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0,
+                 max_segment_time: float = 0.0, parent = None):
         equation_html = "V = a*(1 - e<sup>-t / &tau;</sup>) + c"
-        super().__init__("Exponential Asymptote", equation_html, previous_v_end, max_time, parent)
+        super().__init__("Exponential Asymptote", equation_html, previous_v_end, max_segment_time, max_time, parent)
 
     def build_parameters(self):
         # Equation Params
@@ -482,12 +558,15 @@ class LogarithmicDialog(SegmentDialog):
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
-    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0, parent: float = None):
+    def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0,
+                 max_segment_time: float = 0.0, parent: float = None):
         equation_html = "V = a * log<sub>b</sub>(t + h) + k"
-        super().__init__("Logarithmic", equation_html, previous_v_end, max_time, parent)
+        super().__init__("Logarithmic", equation_html, previous_v_end, max_time, max_segment_time, parent)
 
     def build_parameters(self):
         self.base_combo = QComboBox()
@@ -590,12 +669,14 @@ class CustomDialog(SegmentDialog):
     :type previous_v_end: float
     :param max_time: The maximum time the segment can go to (e.g. the length of the experiment)
     :type max_time: float
+    :param max_segment_time: The maximum time that segments reach
+    :type max_segment_time: float
     :param parent: Parent
     :type parent: SegmentDialog
     """
-    def __init__(self, previous_v_end=0.0, max_time=60.0, parent=None):
+    def __init__(self, previous_v_end=0.0, max_time=60.0, max_segment_time=0.0, parent=None):
         equation_html = "V = f(t) + c"
-        super().__init__("Custom", equation_html, previous_v_end, max_time, parent)
+        super().__init__("Custom", equation_html, previous_v_end, max_segment_time, max_time, parent)
 
     def build_parameters(self):
         # Equation Parameters

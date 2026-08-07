@@ -2,6 +2,8 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdi
                              QPushButton, QDoubleSpinBox, QFormLayout, QGroupBox, QComboBox)
 from PyQt6.QtCore import Qt
 import math
+import numpy as np
+import pyqtgraph as pg
 
 class SegmentDialog(QDialog):
     """
@@ -485,7 +487,7 @@ class ExponentialAsymptoteDialog(SegmentDialog):
     def __init__(self, previous_v_end: float = 0.0, max_time: float = 60.0,
                  max_segment_time: float = 0.0, parent = None):
         equation_html = "V = a*(1 - e<sup>-t / &tau;</sup>) + c"
-        super().__init__("Exponential Asymptote", equation_html, previous_v_end, max_segment_time, max_time, parent)
+        super().__init__("Exponential Asymptote", equation_html, previous_v_end, max_time, max_segment_time, parent)
 
     def build_parameters(self):
         # Equation Params
@@ -764,3 +766,53 @@ class CustomDialog(SegmentDialog):
         if raw_first is not None:
             needed_offset = self.previous_v_end - raw_first
             self.param_offset.setValue(needed_offset)
+
+class CheckSamplingDialog(QDialog):
+    """Dialog displaying the smooth original curve overlaid with zero-order hold (staircase) sampled signal."""
+    
+    def __init__(self, t_smooth, v_smooth, times, sampled_signal, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Check Sampling")
+        self.resize(700, 500)
+
+        layout = QVBoxLayout(self)
+
+        self.plot_widget = pg.PlotWidget()
+        self.plot_widget.setBackground('w')
+        self.plot_widget.showGrid(x=True, y=True, alpha=0.3)
+        self.plot_widget.setLabel('left', 'Voltage', units='V')
+        self.plot_widget.setLabel('bottom', 'Time', units='min')
+
+        self.plot_widget.plot(
+            t_smooth, 
+            v_smooth, 
+            pen=pg.mkPen('b', width=3), 
+            name="Original"
+        )
+
+        if len(times) > 1:
+            x_stair = np.repeat(times, 2)[1:-1]
+            y_stair = np.repeat(sampled_signal, 2)[:-2]
+            
+            self.plot_widget.plot(
+                x_stair, 
+                y_stair, 
+                pen=pg.mkPen('r', width=2), 
+                name="Sampled"
+            )
+
+        self.plot_widget.plot(
+            times, 
+            sampled_signal, 
+            pen=None, 
+            symbol='o', 
+            symbolBrush='r', 
+            symbolPen='r', 
+            symbolSize=6
+        )
+
+        layout.addWidget(self.plot_widget)
+
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn)

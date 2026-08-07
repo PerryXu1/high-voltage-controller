@@ -2,11 +2,12 @@ import sys
 import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QHBoxLayout, 
-                             QVBoxLayout, QListWidget, QLabel, QAbstractItemView)
+                             QVBoxLayout, QListWidget, QLabel, QAbstractItemView,
+                             QGroupBox, QFormLayout, QDoubleSpinBox, QPushButton)
 import pyqtgraph as pg
 
 from dialogs import (ConstantDialog, LinearDialog, SineDialog, QuadraticDialog, ExponentialDialog,
-                     ExponentialAsymptoteDialog, LogarithmicDialog, CustomDialog)
+                     ExponentialAsymptoteDialog, LogarithmicDialog, CustomDialog, CheckSamplingDialog)
 from voltage_model import VoltageModel, SegmentType, Segment
 
 
@@ -87,7 +88,7 @@ class VoltageControlGUI(QMainWindow):
         self.plot_widget.setYRange(0, self._DEFAULT_MAX_VOLTAGE, padding=0)
         self.plot_widget.setLimits(xMin=0, yMin=0, yMax=self._DEFAULT_MAX_VOLTAGE)
 
-        # Components Column
+        # Components Column (Waveform Sequence)
         middle_layout = QVBoxLayout()
         middle_label = QLabel("Waveform Sequence")
         self.active_functions_list = QListWidget()
@@ -97,7 +98,7 @@ class VoltageControlGUI(QMainWindow):
         middle_layout.addWidget(middle_label)
         middle_layout.addWidget(self.active_functions_list)
 
-        # Add Column
+        # Add Column (Available Functions)
         right_layout = QVBoxLayout()
         right_label = QLabel("Available Functions")
         self.available_functions_list = QListWidget()
@@ -109,28 +110,91 @@ class VoltageControlGUI(QMainWindow):
         right_layout.addWidget(right_label)
         right_layout.addWidget(self.available_functions_list)
 
-        # Layout Assembly
-        main_layout.addWidget(self.plot_widget, stretch=6)
-        main_layout.addLayout(middle_layout, stretch=2)
-        main_layout.addLayout(right_layout, stretch=1)
+        # Layout
+        top_half_layout = QHBoxLayout()
+        top_half_layout.addLayout(middle_layout, stretch=2)
+        top_half_layout.addLayout(right_layout, stretch=1)
 
-        # Model and Graph Data Setup
+        bottom_half_layout = QVBoxLayout()
+
+        # Graph
+        graph_group = QGroupBox("Graph")
+        graph_group_layout = QVBoxLayout()
+        graph_form = QFormLayout()
+
+        self.max_time_spin = QDoubleSpinBox()
+        self.max_time_spin.setRange(1.0, 1000.0)
+        self.max_time_spin.setValue(self._DEFAULT_MAX_TIME)
+
+        self.v_scale_spin = QDoubleSpinBox()
+        self.v_scale_spin.setRange(100.0, self._DEFAULT_MAX_VOLTAGE)
+        self.v_scale_spin.setValue(self._DEFAULT_MAX_VOLTAGE)
+
+        graph_form.addRow("Max Time (min):", self.max_time_spin)
+        graph_form.addRow("Max Voltage (V):", self.v_scale_spin)
+
+        self.reset_scales_btn = QPushButton("Reset Scales")
+
+        graph_group_layout.addLayout(graph_form)
+        graph_group_layout.addWidget(self.reset_scales_btn)
+        graph_group.setLayout(graph_group_layout)
+
+        # Experimentation Section
+        exp_group = QGroupBox("Experimentation")
+        exp_group_layout = QVBoxLayout()
+        exp_form = QFormLayout()
+
+        self.step_size_spin = QDoubleSpinBox()
+        self.step_size_spin.setRange(0.001, 10.0)
+        self.step_size_spin.setDecimals(3)
+        self.step_size_spin.setValue(0.1)
+
+        exp_form.addRow("Step Size (min):", self.step_size_spin)
+
+        self.sample_btn = QPushButton("Sample Signal")
+        self.sample_btn.setMinimumHeight(40)
+
+        self.send_btn = QPushButton("Send to Controller")
+        self.send_btn.setMinimumHeight(40)
+        self.send_btn.setEnabled(False)
+
+        exp_group_layout.addLayout(exp_form)
+        exp_group_layout.addWidget(self.sample_btn)
+        exp_group_layout.addWidget(self.send_btn)
+        exp_group.setLayout(exp_group_layout)
+
+        bottom_half_layout.addWidget(graph_group)
+        bottom_half_layout.addWidget(exp_group)
+
+        right_panel = QVBoxLayout()
+        right_panel.addLayout(top_half_layout, stretch=1)
+        right_panel.addLayout(bottom_half_layout, stretch=1)
+
+        main_layout.addWidget(self.plot_widget, stretch=6)
+        main_layout.addLayout(right_panel, stretch=3)
+
         self.voltage_model = VoltageModel()
         self.plot_curve = self.plot_widget.plot([], [], pen=pg.mkPen('b', width=2))
         
-        self.max_time = 60.0
+        self.max_time = float(self._DEFAULT_MAX_TIME)
         self.max_segment_time = 0.0
         self.step_size = 0.1
         self.control_points = []
         
-        # Dynamic Guideline items
         self.v_line = None
         self.h_line = None
         self._is_updating_handle = False
         
-        # Segment Highlighting
         self.highlight_curve = self.plot_widget.plot([], [], pen=pg.mkPen('b', width=4))
         self.active_functions_list.itemSelectionChanged.connect(self.on_active_item_selected)
+
+        # Connections Between Graph and Experimentation
+        self.max_time_spin.editingFinished.connect(self.on_max_time_changed)
+        self.v_scale_spin.editingFinished.connect(self.on_v_scale_changed)
+        self.reset_scales_btn.clicked.connect(self.reset_scales)
+        self.step_size_spin.valueChanged.connect(self.exit_sampled_mode) # <-- ADD THIS LINE
+        self.sample_btn.clicked.connect(self.on_sample_signal)
+        self.send_btn.clicked.connect(self.on_send_to_controller)
 
     def clear_control_points(self):
         """Removes all draggable control handles from the plot."""
@@ -302,6 +366,7 @@ class VoltageControlGUI(QMainWindow):
         if self._is_updating_handle:
             return
         self._is_updating_handle = True
+        self.exit_sampled_mode()
 
         st = segment.segment_type
         p = segment.parameters
@@ -585,8 +650,73 @@ class VoltageControlGUI(QMainWindow):
 
         return Segment(seg_type, min_time, max_time, params)
 
+    def exit_sampled_mode(self):
+        """Reverts the UI back to normal mode from sampled mode."""
+        if self.sample_btn.text() != "Sample Signal":
+            self.sample_btn.setText("Sample Signal")
+            self.send_btn.setEnabled(False)
+
+    def on_max_time_changed(self):
+        """Updates the graph X-axis bounds and internal max time limit."""
+        self.max_time = self.max_time_spin.value()
+        self.plot_widget.setXRange(0, self.max_time, padding=0)
+        self.exit_sampled_mode()
+        self.refresh_gui_and_graph()
+
+    def on_v_scale_changed(self):
+        """Updates the graph Y-axis view without affecting internal component data."""
+        val = self.v_scale_spin.value()
+        self.plot_widget.setYRange(0, val, padding=0)
+        self.exit_sampled_mode()
+
+    def reset_scales(self):
+        """Resets the graph views to their absolute maximum defaults."""
+        self.max_time_spin.setValue(self._DEFAULT_MAX_TIME)
+        self.v_scale_spin.setValue(self._DEFAULT_MAX_VOLTAGE)
+        self.on_max_time_changed()
+        self.on_v_scale_changed()
+
+    def on_sample_signal(self):
+        """Samples the signal uniformly or opens the check sampling dialog if already sampled."""
+        if self.sample_btn.text() == "Check Sampling":
+            t_smooth, v_smooth = self.voltage_model.generate_plot_data(
+                max_time=self.max_time, 
+                step_size=self.step_size / 10.0
+            )
+            
+            dlg = CheckSamplingDialog(
+                t_smooth=t_smooth,
+                v_smooth=v_smooth,
+                times=self.sampled_times,
+                sampled_signal=self.sampled_signal,
+                parent=self
+            )
+            dlg.exec()
+            return
+
+        step = self.step_size_spin.value()
+        
+        # Generate uniform sample time points
+        self.sampled_times = np.arange(0, self.max_time + step, step)
+        
+        # Calculate sampled voltage values
+        sampled_v = [self.voltage_model.get_voltage(t) for t in self.sampled_times]
+        self.sampled_signal = np.nan_to_num(np.array(sampled_v), nan=0.0)
+
+        print(f"Sampled Signal Array (Step: {step} min):")
+        print(self.sampled_signal)
+
+        # Enter Sampled Mode
+        self.sample_btn.setText("Check Sampling")
+        self.send_btn.setEnabled(True)
+
+    def on_send_to_controller(self):
+        print("Sending sampled signal to the STM32 controller over USB...")
+
+
     def refresh_gui_and_graph(self):
         """Full rebuild called when adding or removing segments."""
+        self.exit_sampled_mode()
         self._update_active_list_text()
 
         t_data, v_data = self.voltage_model.generate_plot_data(

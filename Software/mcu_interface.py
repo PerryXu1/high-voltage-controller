@@ -24,7 +24,7 @@ def transmit_signal(time_step: float, voltages: list[float], port: str = "COM3",
         raise ValueError("Cannot send an empty waveform.")
     
     # Header
-    header = struct.pack('<cIf', b'W', num_points, float(time_step))
+    header = struct.pack('<cIf', b'D', num_points, float(time_step))
     
     # Data
     data = struct.pack(f'<{num_points}f', *voltages)

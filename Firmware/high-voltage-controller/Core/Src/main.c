@@ -87,8 +87,8 @@ uint16_t dac_buffer[MAX_POINTS];
 char rx_flag;
 
 // Misc flags
-// 2 bytes: rx_cmd[0] = Command (S, O, C), rx_cmd[1] = Parameter (1 or 0)
-// S: 
+// 2 bytes: rx_cmd[0] = Command (S, O), rx_cmd[1] = Parameter (1 or 0)
+// S: start experiment, O: turn off
 uint8_t rx_cmd[2];
 
 // TX: ADC Data

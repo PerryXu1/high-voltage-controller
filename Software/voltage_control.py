@@ -10,7 +10,7 @@ import pyqtgraph as pg
 from dialogs import (ConstantDialog, LinearDialog, SineDialog, QuadraticDialog, ExponentialDialog,
                      ExponentialAsymptoteDialog, LogarithmicDialog, CustomDialog, CheckSamplingDialog)
 from voltage_model import VoltageModel, SegmentType, Segment
-from mcu_interface import transmit_signal
+from mcu_interface import start_experiment, prepare_experiment
 
 class ControlPoint(pg.TargetItem):
     """Custom target handle that emits signal updates when dragged on the graph."""
@@ -188,17 +188,18 @@ class VoltageControlGUI(QMainWindow):
         self.max_time_spin.editingFinished.connect(self.on_max_time_changed)
         self.v_scale_spin.editingFinished.connect(self.on_v_scale_changed)
         self.reset_scales_btn.clicked.connect(self.reset_scales)
-        self.step_size_spin.valueChanged.connect(self.exit_sampled_mode) # <-- ADD THIS LINE
+        self.step_size_spin.valueChanged.connect(self.exit_sampled_mode)
         self.sample_btn.clicked.connect(self.on_sample_signal)
         self.send_btn.clicked.connect(self.on_send_to_controller)
         
         # Program Variables
-        
         self.max_time = float(self._DEFAULT_MAX_TIME)
         self.max_segment_time = 0.0
         self.step_size = 0.5
         self.control_points = []
         self.signal_data = []
+        self.experiment_mode = False
+        self.target_port = "COM3" # change later
 
     def clear_control_points(self):
         """Removes all draggable control handles from the plot."""
@@ -716,36 +717,71 @@ class VoltageControlGUI(QMainWindow):
         self.send_btn.setEnabled(True)
 
     def on_send_to_controller(self):
-        """Triggered when 'Send to Controller' is clicked in Sampled mode."""
-        
-        if not hasattr(self, 'signal_data') or self.signal_data is None or len(self.signal_data) == 0:
-            QMessageBox.warning(self, "Warning", "No sampled signal available to send.")
-            return
+        """Handles both sending the waveform and starting the experiment."""
+        if not self.experiment_mode:
+            if not hasattr(self, 'signal_data') or self.signal_data is None or len(self.signal_data) == 0:
+                QMessageBox.warning(self, "Warning", "No sampled signal available to send.")
+                return
 
-        target_port = "COM3"  # Replace with your actual STM32 COM port (e.g., '/dev/ttyACM0' on Linux/Mac)
-
-        try:
-            bytes_sent = transmit_signal(
-                time_step=self.step_size, 
-                voltages=self.signal_data, 
-                port=target_port
+            # Show wait cursor
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            
+            ready_received = prepare_experiment(
+                time_step=self.step_size,
+                voltages=self.signal_data,
+                port=self.target_port,
+                timeout=3.0
             )
             
-            QMessageBox.information(
-                self, 
-                "Success", 
-                f"Successfully sent waveform to MCU!\n\n"
-                f"• Points: {len(self.signal_data)}\n"
-                f"• Time Step: {self.step_size} min\n"
-                f"• Total Data Sent: {bytes_sent} bytes"
+            QApplication.restoreOverrideCursor()
+
+            if ready_received:
+                QMessageBox.information(
+                    self, 
+                    "Ready", 
+                    "Signal verified by controller."
+                )
+                
+                # Update state and transform button
+                self.experiment_mode = True
+                self.send_btn.setText("Start Experiment")
+                self.send_btn.setStyleSheet(
+                    "background-color: #D32F2F; color: white; font-weight: bold; font-size: 13px;"
+                )
+            else:
+                QMessageBox.warning(
+                    self, 
+                    "Timeout Error", 
+                    "Signal sent, but controller did not acknowledge"
+                )
+
+        # Start Experiment state
+        else:
+            reply = QMessageBox.question(
+                self,
+                "Confirm Start",
+                "Are you sure you want to start the experiment?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
             )
 
-        except Exception as e:
-            QMessageBox.critical(
-                self, 
-                "Communication Error", 
-                f"Failed to communicate with STM32 controller:\n\n{str(e)}"
-            )
+            if reply == QMessageBox.StandardButton.Yes:
+                try:
+                    bytes_sent = start_experiment(port=self.target_port)
+                    
+                    QMessageBox.information(
+                        self, 
+                        "Experiment Started", 
+                    )
+                    
+                    # self.exit_sampled_mode()
+
+                except Exception as e:
+                    QMessageBox.critical(
+                        self, 
+                        "Communication Error", 
+                        f"Failed to send start flag to controller:\n\n{str(e)}"
+                    )
 
 
     def refresh_gui_and_graph(self):

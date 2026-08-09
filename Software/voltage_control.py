@@ -177,11 +177,6 @@ class VoltageControlGUI(QMainWindow):
         self.voltage_model = VoltageModel()
         self.plot_curve = self.plot_widget.plot([], [], pen=pg.mkPen('b', width=2))
         
-        self.max_time = float(self._DEFAULT_MAX_TIME)
-        self.max_segment_time = 0.0
-        self.step_size = 0.1
-        self.control_points = []
-        
         self.v_line = None
         self.h_line = None
         self._is_updating_handle = False
@@ -196,6 +191,14 @@ class VoltageControlGUI(QMainWindow):
         self.step_size_spin.valueChanged.connect(self.exit_sampled_mode) # <-- ADD THIS LINE
         self.sample_btn.clicked.connect(self.on_sample_signal)
         self.send_btn.clicked.connect(self.on_send_to_controller)
+        
+        # Program Variables
+        
+        self.max_time = float(self._DEFAULT_MAX_TIME)
+        self.max_segment_time = 0.0
+        self.step_size = 0.5
+        self.control_points = []
+        self.signal_data = []
 
     def clear_control_points(self):
         """Removes all draggable control handles from the plot."""
@@ -493,10 +496,13 @@ class VoltageControlGUI(QMainWindow):
 
         self.voltage_model.segments.sort(key=lambda s: s.min_time)
 
-        t_data, v_data = self.voltage_model.generate_plot_data(
+        v_data = self.voltage_model.generate_plot_data(
             max_time=self.max_time, 
             step_size=self.step_size
         )
+        
+        num_steps = int(self.max_time / self.step_size)
+        t_data = [i * self.step_size for i in range(num_steps + 1)]
         self.plot_curve.setData(t_data, v_data)
 
         self._update_partner_handles(active_cp, segment)
@@ -680,33 +686,31 @@ class VoltageControlGUI(QMainWindow):
     def on_sample_signal(self):
         """Samples the signal uniformly or opens the check sampling dialog if already sampled."""
         if self.sample_btn.text() == "Check Sampling":
-            t_smooth, v_smooth = self.voltage_model.generate_plot_data(
+            v_smooth = self.voltage_model.generate_plot_data(
                 max_time=self.max_time, 
-                step_size=self.step_size / 10.0
+                step_size=self.step_size
             )
+            
+            num_steps = int(self.max_time / self.step_size)
+            t_smooth = [i * self.step_size for i in range(num_steps + 1)]
             
             dlg = CheckSamplingDialog(
                 t_smooth=t_smooth,
                 v_smooth=v_smooth,
-                times=self.sampled_times,
-                sampled_signal=self.sampled_signal,
+                times=t_smooth,
+                sampled_signal=self.signal_data,
                 parent=self
             )
             dlg.exec()
             return
 
-        step = self.step_size_spin.value()
+        self.step_size = self.step_size_spin.value()
         
-        # Generate uniform sample time points
-        self.sampled_times = np.arange(0, self.max_time + step, step)
+        sampled_times = np.arange(0, self.max_time + self.step_size, self.step_size)
         
-        # Calculate sampled voltage values
-        sampled_v = [self.voltage_model.get_voltage(t) for t in self.sampled_times]
-        self.sampled_signal = np.nan_to_num(np.array(sampled_v), nan=0.0)
-
-        print(f"Sampled Signal Array (Step: {step} min):")
-        print(self.sampled_signal)
-
+        sampled_v = [self.voltage_model.get_voltage(t) for t in sampled_times]
+        self.signal_data = np.nan_to_num(np.array(sampled_v), nan=0.0)
+        
         # Enter Sampled Mode
         self.sample_btn.setText("Check Sampling")
         self.send_btn.setEnabled(True)
@@ -714,17 +718,16 @@ class VoltageControlGUI(QMainWindow):
     def on_send_to_controller(self):
         """Triggered when 'Send to Controller' is clicked in Sampled mode."""
         
-        if not hasattr(self, 'sampled_signal') or self.sampled_signal is None or len(self.sampled_signal) == 0:
+        if not hasattr(self, 'signal_data') or self.signal_data is None or len(self.signal_data) == 0:
             QMessageBox.warning(self, "Warning", "No sampled signal available to send.")
             return
 
-        time_step = self.step_size_spin.value()
         target_port = "COM3"  # Replace with your actual STM32 COM port (e.g., '/dev/ttyACM0' on Linux/Mac)
 
         try:
             bytes_sent = transmit_signal(
-                time_step=time_step, 
-                voltages=self.sampled_signal, 
+                time_step=self.step_size, 
+                voltages=self.signal_data, 
                 port=target_port
             )
             
@@ -732,8 +735,8 @@ class VoltageControlGUI(QMainWindow):
                 self, 
                 "Success", 
                 f"Successfully sent waveform to MCU!\n\n"
-                f"• Points: {len(self.sampled_signal)}\n"
-                f"• Time Step: {time_step} min\n"
+                f"• Points: {len(self.signal_data)}\n"
+                f"• Time Step: {self.step_size} min\n"
                 f"• Total Data Sent: {bytes_sent} bytes"
             )
 
@@ -750,11 +753,15 @@ class VoltageControlGUI(QMainWindow):
         self.exit_sampled_mode()
         self._update_active_list_text()
 
-        t_data, v_data = self.voltage_model.generate_plot_data(
+        v_data = self.voltage_model.generate_plot_data(
             max_time=self.max_time, 
             step_size=self.step_size
         )
+        
+        num_steps = int(self.max_time / self.step_size)
+        t_data = [i * self.step_size for i in range(num_steps + 1)]
         self.plot_curve.setData(t_data, v_data)
+        
         self.generate_control_points()
         
         self.on_active_item_selected()
@@ -889,7 +896,6 @@ class VoltageControlGUI(QMainWindow):
             if 0 <= row < len(self.voltage_model.segments):
                 segment = self.voltage_model.segments.pop(row)
                 self.max_segment_time = segment.min_time
-                print(self.max_segment_time)
                 self.highlight_curve.setData([], [])
                 self.refresh_gui_and_graph()
                 event.accept()

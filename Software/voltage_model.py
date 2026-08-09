@@ -130,18 +130,25 @@ class VoltageModel:
             
         return 0.0
 
-    def generate_plot_data(self, max_time: float, step_size: float = 0.5):
-        """Generates arrays of T and V data points for the GUI graph."""
+    def generate_plot_data(self, max_time: float, step_size: float = 0.5) -> list[float]:
+        """Generates an array of voltage signal data points for the GUI graph.
+        
+        :param max_time: The maximum time that the voltage signal goes to
+        :type max_time: float
+        :param step_size: The time between consecutive samples of the analytical signal
+        :type step_size: float
+        
+        :return: The list of voltages
+        :rtype: list[float]
+        """
         if not self.segments or step_size <= 0:
-            return [], []
+            return []
 
-        t_data = []
         v_data = []
         num_steps = int(max_time / step_size)
 
         for i in range(num_steps + 1):
             t = i * step_size
-            t_data.append(t)
             v_data.append(self.get_voltage(t))
 
-        return t_data, v_data
+        return v_data

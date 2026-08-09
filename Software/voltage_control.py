@@ -3,13 +3,14 @@ import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QHBoxLayout, 
                              QVBoxLayout, QListWidget, QLabel, QAbstractItemView,
-                             QGroupBox, QFormLayout, QDoubleSpinBox, QPushButton)
+                             QGroupBox, QFormLayout, QDoubleSpinBox, QPushButton,
+                             QMessageBox)
 import pyqtgraph as pg
 
 from dialogs import (ConstantDialog, LinearDialog, SineDialog, QuadraticDialog, ExponentialDialog,
                      ExponentialAsymptoteDialog, LogarithmicDialog, CustomDialog, CheckSamplingDialog)
 from voltage_model import VoltageModel, SegmentType, Segment
-
+from mcu_interface import transmit_signal
 
 class ControlPoint(pg.TargetItem):
     """Custom target handle that emits signal updates when dragged on the graph."""
@@ -710,8 +711,39 @@ class VoltageControlGUI(QMainWindow):
         self.sample_btn.setText("Check Sampling")
         self.send_btn.setEnabled(True)
 
-    def on_send_to_controller(self):
-        print("Sending sampled signal to the STM32 controller over USB...")
+def on_send_to_controller(self):
+        """Triggered when 'Send to Controller' is clicked in Sampled mode."""
+        if not hasattr(self, 'sampled_signal') or self.sampled_signal is None or len(self.sampled_signal) == 0:
+            QMessageBox.warning(self, "Warning", "No sampled signal available to send.")
+            return
+
+        time_step = self.step_size_spin.value()
+        target_port = "COM3"  # Replace with your actual STM32 COM port (e.g., '/dev/ttyACM0' on Linux/Mac)
+
+        try:
+            # Send waveform binary packet
+            bytes_sent = transmit_signal(
+                time_step=time_step, 
+                voltages=self.sampled_signal, 
+                port=target_port
+            )
+            
+            # Show Success Dialog
+            QMessageBox.information(
+                self, 
+                "Success", 
+                f"Successfully sent waveform to MCU!\n\n"
+                f"• Points: {len(self.sampled_signal)}\n"
+                f"• Time Step: {time_step} min\n"
+                f"• Total Data Sent: {bytes_sent} bytes"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, 
+                "Communication Error", 
+                f"Failed to communicate with STM32 controller:\n\n{str(e)}"
+            )
 
 
     def refresh_gui_and_graph(self):

@@ -711,8 +711,9 @@ class VoltageControlGUI(QMainWindow):
         self.sample_btn.setText("Check Sampling")
         self.send_btn.setEnabled(True)
 
-def on_send_to_controller(self):
+    def on_send_to_controller(self):
         """Triggered when 'Send to Controller' is clicked in Sampled mode."""
+        
         if not hasattr(self, 'sampled_signal') or self.sampled_signal is None or len(self.sampled_signal) == 0:
             QMessageBox.warning(self, "Warning", "No sampled signal available to send.")
             return
@@ -721,14 +722,12 @@ def on_send_to_controller(self):
         target_port = "COM3"  # Replace with your actual STM32 COM port (e.g., '/dev/ttyACM0' on Linux/Mac)
 
         try:
-            # Send waveform binary packet
             bytes_sent = transmit_signal(
                 time_step=time_step, 
                 voltages=self.sampled_signal, 
                 port=target_port
             )
             
-            # Show Success Dialog
             QMessageBox.information(
                 self, 
                 "Success", 

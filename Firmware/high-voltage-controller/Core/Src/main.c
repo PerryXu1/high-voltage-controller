@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32g4xx_hal_dac.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -46,7 +45,6 @@ ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
 DAC_HandleTypeDef hdac1;
-DMA_HandleTypeDef hdma_dac1_ch1;
 DMA_HandleTypeDef hdma_dac1_ch2;
 
 TIM_HandleTypeDef htim6;
@@ -54,7 +52,44 @@ TIM_HandleTypeDef htim6;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+#define MAX_POINTS 1000
+#define V_REF 2.5f // use 2.5V analog reference voltage
+#define CURRENT_LIMIT_VOLTAGE 0.2f
+#define ADC_READ_PERIOD 20 // in ms
 
+// MCU State logic
+typedef enum {
+  STATE_WAIT_HEADER,
+  STATE_WAIT_PAYLOAD,
+  STATE_READY,
+  STATE_RUNNING
+} AppState_t;
+
+volatile AppState_t sys_state = STATE_WAIT_HEADER
+
+// RX: Signal Data
+typedef struct __attribute__((packed)) {
+    char header; // 'D' for data
+    uint32_t num_points;
+    float time_step;
+} WaveformHeader_t;
+
+WaveformHeader_t rx_header;
+float rx_voltages[MAX_POINTS];
+uint16_t dac_buffer[MAX_POINTS]; 
+char rx_flag;
+
+// TX: ADC Data
+uint16_t adc_values[2]; // 0: voltage, 1: current
+
+typedef struct __attribute__((packed)) {
+    uint16_t sync_word; // 0xA5A5
+    uint16_t v_adc;
+    uint16_t i_adc;
+} TelemetryPacket_t;
+
+TelemetryPacket_t tx_packet = { .sync_word = 0xA5A5 };
+uint32_t last_tx_tick = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -66,16 +101,89 @@ static void MX_TIM6_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
-
-int _write(int file, char *ptr, int len) {
-  HAL_UART_Transmit(&huart1, (uint8_t*)ptr, len, HAL_MAX_DELAY);
-  return len;
-}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void Configure_TIM6_TimeStep(float dt_minutes) {
+  float dt_seconds = dt_minutes * 60.0f;
+  HAL_TIM_Base_Stop(&htim6);
 
+  uint32_t prescaler = 15999; 
+  uint32_t arr_value = (uint32_t)(dt_seconds * 1000.0f) - 1;
+
+  if (arr_value > 65535) {
+      prescaler = 63999; 
+      arr_value = (uint32_t)(dt_seconds * 250.0f) - 1;
+  }
+
+  __HAL_TIM_SET_PRESCALER(&htim6, prescaler);
+  __HAL_TIM_SET_AUTORELOAD(&htim6, arr_value);
+  __HAL_TIM_SET_COUNTER(&htim6, 0); 
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  if (huart->Instance == USART1) {
+      
+      // State logic
+      switch (sys_state) {
+          case STATE_WAIT_HEADER:
+              if (rx_header.header == 'D') {
+                  sys_state = STATE_WAIT_PAYLOAD;
+                  // Read incoming data
+                  HAL_UART_Receive_IT(&huart1, (uint8_t*)rx_voltages, rx_header.num_points * sizeof(float));
+              } else {
+                  // Invalid data; flush and try again
+                  HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_header, sizeof(WaveformHeader_t));
+              }
+              break;
+
+          case STATE_WAIT_PAYLOAD:
+              // Process data into DAC inputs
+              for (uint32_t i = 0; i < rx_header.num_points; i++) {
+                  float v = rx_voltages[i];
+                  if (v < 0.0f) {
+                    v = 0.0f;
+                  }
+                  if (v > V_REF) {
+                    v = V_REF;
+                  }
+                  dac_buffer[i] = (uint16_t)((v / V_REF) * 4095.0f);
+              }
+
+              // Set timer speed
+              Configure_TIM6_TimeStep(rx_header.time_step);
+
+              // Tell PC the MCU is ready
+              uint8_t ready_msg = 'R';
+              HAL_UART_Transmit(&huart1, &ready_msg, 1, HAL_MAX_DELAY);
+              
+              // Wait for start flag from PC
+              sys_state = STATE_READY;
+              HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_flag, 1);
+              break;
+
+          case STATE_READY:
+          case STATE_RUNNING:
+              // State is ready and is started
+              if (sys_state == STATE_READY && rx_flag == 'S') {
+                  // Set DAC CH2 to output data
+                  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t*)dac_buffer, rx_header.num_points, DAC_ALIGN_12B_R);
+                  HAL_TIM_Base_Start(&htim6);
+                  sys_state = STATE_RUNNING;
+              } 
+              // Emergency stop flag
+              else if (rx_flag == 'E') { 
+                  HAL_TIM_Base_Stop(&htim6);
+                  HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_2);
+                  sys_state = STATE_READY;
+              }
+              
+              HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_flag, 1);
+              break;
+      }
+  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -114,19 +222,17 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  // MOSFET TEST CODE ==========
-
-  // HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_6, GPIO_PIN_SET);
-
-  // OP AMP TEST CODE ========== (JUST FOR VOLTAGE CONTROL)
+  // Set DAC CH1 output | limit / 2 since op amp gain is 2
+  uint32_t current_limit_dac_val = (uint32_t) (((CURRENT_LIMIT_VOLTAGE / 2) / V_REF) * 4095.0f);
+  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, current_limit_dac_val);
   HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 
-  // 2. Set value directly (2482 out of 4095 => ~2.0V)
-  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 2048);
+  // Start ADC monitoring
+  HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, 2);
 
-  // VOLTAGE MONITOR TEST CODE ==========
-
-  // HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
+  // State logic
+  HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_header, sizeof(WaveformHeader_t));
 
   /* USER CODE END 2 */
 
@@ -137,20 +243,22 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // HAL_ADC_Start(&hadc1);
-
-    // if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
-    // {
-    //   uint32_t adc_val = HAL_ADC_GetValue(&hadc1);
-      
-    //   float pin_voltage = (adc_val * 3.3f) / 4095.0f;
-
-    //   printf("Raw ADC: %lu | Pin Volts: %.3f V\r\n", adc_val, pin_voltage);
-    // }
-    
-    // HAL_ADC_Stop(&hadc1);
-
-    // HAL_Delay(200);
+    if (sys_state == STATE_RUNNING) {
+        
+        // Transmit ADC data every 20ms (50 Hz)
+        if (HAL_GetTick() - last_tx_tick >= ADC_READ_PERIOD) {
+            
+            if (huart1.gState == HAL_UART_STATE_READY) {
+                last_tx_tick = HAL_GetTick();
+                
+                tx_packet.v_adc = adc_values[0];
+                tx_packet.i_adc = adc_values[1];
+                
+                // Send ADC data to PC
+                HAL_UART_Transmit_IT(&huart1, (uint8_t*)&tx_packet, sizeof(TelemetryPacket_t));
+            }
+        }
+    }
   }
   /* USER CODE END 3 */
 }
@@ -221,15 +329,15 @@ static void MX_ADC1_Init(void)
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.GainCompensation = 0;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
+  hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   hadc1.Init.LowPowerAutoWait = DISABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
-  hadc1.Init.NbrOfConversion = 1;
+  hadc1.Init.NbrOfConversion = 2;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.Overrun = ADC_OVR_DATA_PRESERVED;
   hadc1.Init.OversamplingMode = DISABLE;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -253,6 +361,14 @@ static void MX_ADC1_Init(void)
   sConfig.SingleDiff = ADC_SINGLE_ENDED;
   sConfig.OffsetNumber = ADC_OFFSET_NONE;
   sConfig.Offset = 0;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Regular Channel
+  */
+  sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -295,7 +411,7 @@ static void MX_DAC1_Init(void)
   sConfig.DAC_DMADoubleDataMode = DISABLE;
   sConfig.DAC_SignedFormat = DISABLE;
   sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
-  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_SOFTWARE;
   sConfig.DAC_Trigger2 = DAC_TRIGGER_NONE;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
   sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_EXTERNAL;
@@ -307,6 +423,7 @@ static void MX_DAC1_Init(void)
 
   /** DAC channel OUT2 config
   */
+  sConfig.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
   if (HAL_DAC_ConfigChannel(&hdac1, &sConfig, DAC_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
@@ -414,9 +531,6 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Channel1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
   /* DMA1_Channel2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);

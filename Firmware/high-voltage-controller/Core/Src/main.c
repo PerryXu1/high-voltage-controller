@@ -52,12 +52,19 @@ TIM_HandleTypeDef htim6;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+// Data variables
 #define MAX_POINTS 1000
 #define V_REF 2.5f // use 2.5V analog reference voltage
 #define CURRENT_LIMIT_VOLTAGE 0.2f
 #define ADC_READ_PERIOD 20 // in ms
 
-// MCU State logic
+// GPIO variables
+#define CTRL_PORT        GPIOA
+#define PIN_OUTPUT_CTRL  GPIO_PIN_10
+#define PIN_REMOTE_CTRL  GPIO_PIN_11
+#define PIN_INTERLOCK    GPIO_PIN_14
+
+// MCU state logic
 typedef enum {
   STATE_WAIT_HEADER,
   STATE_WAIT_PAYLOAD,
@@ -78,6 +85,11 @@ WaveformHeader_t rx_header;
 float rx_voltages[MAX_POINTS];
 uint16_t dac_buffer[MAX_POINTS]; 
 char rx_flag;
+
+// Misc flags
+// 2 bytes: rx_cmd[0] = Command (S, O, C), rx_cmd[1] = Parameter (1 or 0)
+// S: 
+uint8_t rx_cmd[2];
 
 // TX: ADC Data
 uint16_t adc_values[2]; // 0: voltage, 1: current
@@ -124,7 +136,6 @@ void Configure_TIM6_TimeStep(float dt_minutes) {
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART1) {
-      
       // State logic
       switch (sys_state) {
           case STATE_WAIT_HEADER:
@@ -158,28 +169,42 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
               uint8_t ready_msg = 'R';
               HAL_UART_Transmit(&huart1, &ready_msg, 1, HAL_MAX_DELAY);
               
-              // Wait for start flag from PC
+              // Wait for 2-byte flag command from PC [Command, Parameter]
               sys_state = STATE_READY;
-              HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_flag, 1);
+              HAL_UART_Receive_IT(&huart1, rx_cmd, 2);
               break;
 
           case STATE_READY:
           case STATE_RUNNING:
-              // State is ready and is started
-              if (sys_state == STATE_READY && rx_flag == 'S') {
+              // S: Start experiment
+              if (sys_state == STATE_READY && rx_cmd[0] == 'S') {
                   // Set DAC CH2 to output data
                   HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t*)dac_buffer, rx_header.num_points, DAC_ALIGN_12B_R);
                   HAL_TIM_Base_Start(&htim6);
+                  
+                  // Set interlock ON
+                  HAL_GPIO_WritePin(CTRL_PORT, PIN_OUTPUT_CTRL, GPIO_PIN_SET);
                   sys_state = STATE_RUNNING;
               } 
-              // Emergency stop flag
-              else if (rx_flag == 'E') { 
+              // O: Turn Off flag
+              else if (rx_cmd[0] == 'O') { 
                   HAL_TIM_Base_Stop(&htim6);
                   HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_2);
+                  
+                  // Set output off
+                  HAL_GPIO_WritePin(CTRL_PORT, PIN_OUTPUT_CTRL, GPIO_PIN_RESET);
                   sys_state = STATE_READY;
               }
+              // C: Remote / Local Control flag
+              else if (rx_cmd[0] == 'C') {
+                  if (rx_cmd[1] == 1 || rx_cmd[1] == '1') {
+                      HAL_GPIO_WritePin(CTRL_PORT, PIN_REMOTE_CTRL, GPIO_PIN_SET);   // Remote (Pin 11 HIGH)
+                  } else if (rx_cmd[1] == 0 || rx_cmd[1] == '0') {
+                      HAL_GPIO_WritePin(CTRL_PORT, PIN_REMOTE_CTRL, GPIO_PIN_RESET); // Front Panel / Local (Pin 11 LOW)
+                  }
+              }
               
-              HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_flag, 1);
+              HAL_UART_Receive_IT(&huart1, rx_cmd, 2);
               break;
       }
   }

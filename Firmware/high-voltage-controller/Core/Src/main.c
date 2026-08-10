@@ -79,9 +79,9 @@ typedef struct __attribute__((packed)) {
     char header; // 'D' for data
     uint32_t num_points;
     float time_step;
-} WaveformHeader_t;
+} DataHeader_t;
 
-WaveformHeader_t rx_header;
+DataHeader_t rx_header;
 float rx_voltages[MAX_POINTS];
 uint16_t dac_buffer[MAX_POINTS]; 
 char rx_flag;
@@ -145,7 +145,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                   HAL_UART_Receive_IT(&huart1, (uint8_t*)rx_voltages, rx_header.num_points * sizeof(float));
               } else {
                   // Invalid data; flush and try again
-                  HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_header, sizeof(WaveformHeader_t));
+                  HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_header, sizeof(DataHeader_t));
               }
               break;
 
@@ -179,7 +179,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
               // S: Start experiment
               if (sys_state == STATE_READY && rx_cmd[0] == 'S') {
                   // Set DAC CH2 to output data
-                  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t*)dac_buffer, rx_header.num_points, DAC_ALIGN_12B_R);
+                  HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t*) dac_buffer, rx_header.num_points, DAC_ALIGN_12B_R);
                   HAL_TIM_Base_Start(&htim6);
                   
                   // Set interlock ON
@@ -257,7 +257,8 @@ int main(void)
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, 2);
 
   // State logic
-  HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_header, sizeof(WaveformHeader_t));
+  sys_state = STATE_WAIT_HEADER;
+  HAL_UART_Receive_IT(&huart1, (uint8_t*)&rx_header, sizeof(DataHeader_t));
 
   /* USER CODE END 2 */
 

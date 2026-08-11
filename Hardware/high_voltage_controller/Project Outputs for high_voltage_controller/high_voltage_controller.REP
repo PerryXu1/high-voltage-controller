@@ -2,24 +2,15 @@
 FileName = high_voltage_controller.GBR
 AutoAperture = True
 *************************************************************
-Generating : Ground
-      File : high_voltage_controller.G1
+Generating : Bottom Overlay
+      File : high_voltage_controller.GBO
 
-    Adding Layer      : Ground
-
-    Adding Layer      : Multi-Layer
+    Adding Layer      : Bottom Overlay
 
 
 Used DCodes :
-    D42
-    D43
-    D44
-    D45
-    D46
-    D47
-    D48
-    D49
-    D54
+    D12
+    D13
 *************************************************************
 
 *************************************************************
@@ -60,6 +51,22 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
+Generating : Top Overlay
+      File : high_voltage_controller.GTO
+
+    Adding Layer      : Top Overlay
+
+
+Used DCodes :
+    D10
+    D11
+    D12
+    D13
+    D14
+    D15
+*************************************************************
+
+*************************************************************
 Generating : Power
       File : high_voltage_controller.G2
 
@@ -81,22 +88,40 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
-Generating : Bottom Solder
-      File : high_voltage_controller.GBS
+Generating : Top Solder
+      File : high_voltage_controller.GTS
 
-    Adding Layer      : Bottom Solder
+    Adding Layer      : Top Solder
 
-    Adding Layer      : Signal 2
+    Adding Layer      : Signal 1
 
     Adding Layer      : Multi-Layer
 
 
 Used DCodes :
+    D17
     D18
     D19
+    D20
     D21
     D22
     D23
+    D24
+    D25
+    D26
+    D27
+    D28
+    D29
+    D30
+    D31
+    D33
+    D34
+    D35
+    D37
+    D38
+    D39
+    D40
+    D41
     D42
     D43
     D44
@@ -105,6 +130,77 @@ Used DCodes :
     D47
     D48
     D49
+*************************************************************
+
+*************************************************************
+Generating : Ground
+      File : high_voltage_controller.G1
+
+    Adding Layer      : Ground
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D42
+    D43
+    D44
+    D45
+    D46
+    D47
+    D48
+    D49
+    D54
+*************************************************************
+
+*************************************************************
+Generating : Signal 2
+      File : high_voltage_controller.GBL
+
+    Adding Layer      : Signal 2
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D13
+    D14
+    D17
+    D18
+    D22
+    D24
+    D27
+    D42
+    D43
+    D44
+    D45
+    D46
+    D47
+    D48
+    D49
+    D50
+    D52
+    D53
+    D54
+*************************************************************
+
+*************************************************************
+Generating : Bottom Paste
+      File : high_voltage_controller.GBP
+
+    Adding Layer      : Bottom Paste
+
+    Adding Layer      : Signal 2
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D17
+    D18
+    D22
+    D24
+    D27
 *************************************************************
 
 *************************************************************
@@ -158,90 +254,12 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
-Generating : Bottom Paste
-      File : high_voltage_controller.GBP
+Generating : Bottom Solder
+      File : high_voltage_controller.GBS
 
-    Adding Layer      : Bottom Paste
-
-    Adding Layer      : Signal 2
-
-    Adding Layer      : Multi-Layer
-
-
-Used DCodes :
-    D18
-    D19
-    D21
-    D22
-    D23
-*************************************************************
-
-*************************************************************
-Generating : Signal 2
-      File : high_voltage_controller.GBL
+    Adding Layer      : Bottom Solder
 
     Adding Layer      : Signal 2
-
-    Adding Layer      : Multi-Layer
-
-
-Used DCodes :
-    D13
-    D14
-    D18
-    D19
-    D21
-    D22
-    D23
-    D42
-    D43
-    D44
-    D45
-    D46
-    D47
-    D48
-    D49
-    D50
-    D52
-    D53
-    D54
-*************************************************************
-
-*************************************************************
-Generating : Top Overlay
-      File : high_voltage_controller.GTO
-
-    Adding Layer      : Top Overlay
-
-
-Used DCodes :
-    D10
-    D11
-    D12
-    D13
-    D14
-    D15
-*************************************************************
-
-*************************************************************
-Generating : Bottom Overlay
-      File : high_voltage_controller.GBO
-
-    Adding Layer      : Bottom Overlay
-
-
-Used DCodes :
-    D12
-    D14
-*************************************************************
-
-*************************************************************
-Generating : Top Solder
-      File : high_voltage_controller.GTS
-
-    Adding Layer      : Top Solder
-
-    Adding Layer      : Signal 1
 
     Adding Layer      : Multi-Layer
 
@@ -249,27 +267,9 @@ Generating : Top Solder
 Used DCodes :
     D17
     D18
-    D19
-    D20
-    D21
     D22
-    D23
     D24
-    D25
-    D26
     D27
-    D28
-    D29
-    D30
-    D31
-    D33
-    D34
-    D35
-    D37
-    D38
-    D39
-    D40
-    D41
     D42
     D43
     D44

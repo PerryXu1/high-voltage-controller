@@ -72,7 +72,7 @@ typedef enum {
   STATE_RUNNING
 } AppState_t;
 
-volatile AppState_t sys_state = STATE_WAIT_HEADER
+volatile AppState_t sys_state = STATE_WAIT_HEADER;
 
 // RX: Signal Data
 typedef struct __attribute__((packed)) {

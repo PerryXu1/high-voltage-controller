@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
+#include <inttypes.h>
 
 /* USER CODE END Includes */
 
@@ -57,6 +57,10 @@ UART_HandleTypeDef huart1;
 #define V_REF 2.5f // use 2.5V analog reference voltage
 #define CURRENT_LIMIT_VOLTAGE 0.2f
 #define ADC_READ_PERIOD 20 // in ms
+
+// TEST
+volatile uint32_t dac_index = 0;
+uint16_t current_dac_value = 0;
 
 // GPIO variables
 #define CTRL_PORT        GPIOA
@@ -136,6 +140,7 @@ void Configure_TIM6_TimeStep(float dt_minutes) {
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART1) {
+
       // State logic
       switch (sys_state) {
           case STATE_WAIT_HEADER:
@@ -152,14 +157,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
           case STATE_WAIT_PAYLOAD:
               // Process data into DAC inputs
               for (uint32_t i = 0; i < rx_header.num_points; i++) {
-                  float v = rx_voltages[i];
-                  if (v < 0.0f) {
-                    v = 0.0f;
-                  }
-                  if (v > V_REF) {
-                    v = V_REF;
-                  }
-                  dac_buffer[i] = (uint16_t)((v / V_REF) * 4095.0f);
+                  dac_buffer[i] = rx_voltages[i];
               }
 
               // Set timer speed
@@ -167,10 +165,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 
               // Tell PC the MCU is ready
               uint8_t ready_msg = 'R';
-              HAL_UART_Transmit(&huart1, &ready_msg, 1, HAL_MAX_DELAY);
+              HAL_UART_Transmit_IT(&huart1, &ready_msg, 1);
               
-              // Wait for 2-byte flag command from PC [Command, Parameter]
               sys_state = STATE_READY;
+
+              __HAL_UART_CLEAR_OREFLAG(&huart1);
+              __HAL_UART_CLEAR_NEFLAG(&huart1);
+              __HAL_UART_CLEAR_FEFLAG(&huart1);
+
+              uint32_t dummy = huart1.Instance->RDR;
+              (void)dummy;
+
+              // Now re-arm the interrupt
+              HAL_UART_Receive_IT(&huart1, rx_cmd, 2);
+
               HAL_UART_Receive_IT(&huart1, rx_cmd, 2);
               break;
 
@@ -185,7 +193,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
                   // Set interlock ON
                   HAL_GPIO_WritePin(CTRL_PORT, PIN_OUTPUT_CTRL, GPIO_PIN_SET);
                   sys_state = STATE_RUNNING;
-              } 
+              }
+
               // O: Turn Off flag
               else if (rx_cmd[0] == 'O') { 
                   HAL_TIM_Base_Stop(&htim6);
@@ -206,6 +215,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
               
               HAL_UART_Receive_IT(&huart1, rx_cmd, 2);
               break;
+          
       }
   }
 }

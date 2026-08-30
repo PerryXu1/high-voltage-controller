@@ -6,11 +6,13 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QHBoxLayout,
                              QGroupBox, QFormLayout, QDoubleSpinBox, QPushButton,
                              QMessageBox)
 import pyqtgraph as pg
-
+import re
+import serial
+import serial.tools.list_ports
 from dialogs import (ConstantDialog, LinearDialog, SineDialog, QuadraticDialog, ExponentialDialog,
                      ExponentialAsymptoteDialog, LogarithmicDialog, CustomDialog, CheckSamplingDialog)
 from voltage_model import VoltageModel, SegmentType, Segment
-from mcu_interface import start_experiment, prepare_experiment
+from mcu_interface import start_experiment, prepare_experiment, stop_experiment, set_control_mode
 
 class ControlPoint(pg.TargetItem):
     """Custom target handle that emits signal updates when dragged on the graph."""
@@ -159,9 +161,30 @@ class VoltageControlGUI(QMainWindow):
         self.send_btn.setMinimumHeight(40)
         self.send_btn.setEnabled(False)
 
+        self.active_btns_widget = QWidget()
+        active_btns_layout = QHBoxLayout(self.active_btns_widget)
+        active_btns_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.stop_btn = QPushButton("Stop Experiment")
+        self.stop_btn.setStyleSheet("background-color: #FF0000; color: white; font-weight: bold; font-size: 13px;")
+        self.stop_btn.setMinimumHeight(40)
+        self.stop_btn.clicked.connect(self.on_stop_experiment_clicked)
+
+        self.control_mode_btn = QPushButton("Mode: Remote")
+        self.control_mode_btn.setStyleSheet("font-weight: bold; font-size: 13px;")
+        self.control_mode_btn.setMinimumHeight(40)
+        self.control_mode_btn.clicked.connect(self.on_control_mode_clicked)
+
+        active_btns_layout.addWidget(self.stop_btn)
+        active_btns_layout.addWidget(self.control_mode_btn)
+        
+        self.active_btns_widget.setVisible(False)
+        self.is_remote_mode = True
+
         exp_group_layout.addLayout(exp_form)
         exp_group_layout.addWidget(self.sample_btn)
         exp_group_layout.addWidget(self.send_btn)
+        exp_group_layout.addWidget(self.active_btns_widget)
         exp_group.setLayout(exp_group_layout)
 
         bottom_half_layout.addWidget(graph_group)
@@ -199,7 +222,7 @@ class VoltageControlGUI(QMainWindow):
         self.control_points = []
         self.signal_data = []
         self.experiment_mode = False
-        self.target_port = "COM3" # change later
+        self.target_port = auto_detect_port(r"/dev/cu\.usbserial-.*")
 
     def clear_control_points(self):
         """Removes all draggable control handles from the plot."""
@@ -746,7 +769,7 @@ class VoltageControlGUI(QMainWindow):
                 self.experiment_mode = True
                 self.send_btn.setText("Start Experiment")
                 self.send_btn.setStyleSheet(
-                    "background-color: #D32F2F; color: white; font-weight: bold; font-size: 13px;"
+                    "background-color: #74C476; color: white; font-weight: bold; font-size: 13px;"
                 )
             else:
                 QMessageBox.warning(
@@ -772,9 +795,13 @@ class VoltageControlGUI(QMainWindow):
                     QMessageBox.information(
                         self, 
                         "Experiment Started", 
+                        "The experiment start signal was successfully sent to the controller."
                     )
                     
-                    # self.exit_sampled_mode()
+                    self.sample_btn.setVisible(False)
+                    self.send_btn.setVisible(False)
+                    
+                    self.active_btns_widget.setVisible(True)
 
                 except Exception as e:
                     QMessageBox.critical(
@@ -783,6 +810,43 @@ class VoltageControlGUI(QMainWindow):
                         f"Failed to send start flag to controller:\n\n{str(e)}"
                     )
 
+    def on_stop_experiment_clicked(self):
+        """Sends the stop flag if Shift is held."""
+        modifiers = QApplication.keyboardModifiers()
+        if modifiers & Qt.KeyboardModifier.ShiftModifier:
+            try:
+                stop_experiment(port=self.target_port)
+                QMessageBox.information(self, "Experiment Stopped", "Stop flag successfully sent.")
+                
+                self.stop_btn.setVisible(False)
+                self.control_mode_btn.setVisible(False)
+                self.sample_btn.setVisible(True)
+                self.send_btn.setVisible(True)
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to send stop flag:\n{str(e)}")
+        else:
+            QMessageBox.warning(self, "Action Blocked", "Shift + Click required to stop experiment")
+
+    def on_control_mode_clicked(self):
+        """Toggles between Remote and Local control if Shift is held."""
+        modifiers = QApplication.keyboardModifiers()
+        if modifiers & Qt.KeyboardModifier.ShiftModifier:
+            try:
+                new_state = not self.is_remote_mode
+                
+                set_control_mode(remote=new_state, port=self.target_port)
+                
+                self.is_remote_mode = new_state
+                if self.is_remote_mode:
+                    self.control_mode_btn.setText("Mode: Remote")
+                else:
+                    self.control_mode_btn.setText("Mode: Local")
+                    
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to change control mode:\n{str(e)}")
+        else:
+            QMessageBox.warning(self, "Action Blocked", "Shift + Click required to change control modes")
 
     def refresh_gui_and_graph(self):
         """Full rebuild called when adding or removing segments."""
@@ -939,6 +1003,15 @@ class VoltageControlGUI(QMainWindow):
 
         super().keyPressEvent(event)
 
+def auto_detect_port(pattern: str = r"/dev/cu\.usbserial-.*") -> str:
+    """Scans system serial ports and returns the device path for the first 
+    port matching the given regex pattern.
+    """
+    ports = serial.tools.list_ports.comports()
+    for port in ports:
+        if re.search(pattern, port.device):
+            return port.device
+            
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

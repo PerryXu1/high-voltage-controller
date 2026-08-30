@@ -78,8 +78,9 @@ class VoltageControlGUI(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QHBoxLayout(central_widget)
+        
+        self.experiment_running = False
 
-        # Graph Panel
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         pg.setConfigOptions(antialias=True)
@@ -91,7 +92,6 @@ class VoltageControlGUI(QMainWindow):
         self.plot_widget.setYRange(0, self._DEFAULT_MAX_VOLTAGE, padding=0)
         self.plot_widget.setLimits(xMin=0, yMin=0, yMax=self._DEFAULT_MAX_VOLTAGE)
 
-        # Components Column (Waveform Sequence)
         middle_layout = QVBoxLayout()
         middle_label = QLabel("Waveform Sequence")
         self.active_functions_list = QListWidget()
@@ -101,7 +101,6 @@ class VoltageControlGUI(QMainWindow):
         middle_layout.addWidget(middle_label)
         middle_layout.addWidget(self.active_functions_list)
 
-        # Add Column (Available Functions)
         right_layout = QVBoxLayout()
         right_label = QLabel("Available Functions")
         self.available_functions_list = QListWidget()

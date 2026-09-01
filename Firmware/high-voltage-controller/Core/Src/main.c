@@ -126,16 +126,20 @@ void Configure_TIM6_TimeStep(float dt_minutes) {
   HAL_TIM_Base_Stop(&htim6);
 
   uint32_t prescaler = 15999; 
-  uint32_t arr_value = (uint32_t)(dt_seconds * 1000.0f) - 1;
+  uint32_t arr_value = (uint32_t)(dt_seconds * 10000.0f) - 1;
 
   if (arr_value > 65535) {
       prescaler = 63999; 
-      arr_value = (uint32_t)(dt_seconds * 250.0f) - 1;
+      arr_value = (uint32_t)(dt_seconds * 2500.0f) - 1;
   }
 
   __HAL_TIM_SET_PRESCALER(&htim6, prescaler);
   __HAL_TIM_SET_AUTORELOAD(&htim6, arr_value);
+
+  htim6.Instance->EGR = TIM_EGR_UG;
+
   __HAL_TIM_SET_COUNTER(&htim6, 0); 
+
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
@@ -186,6 +190,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
           case STATE_RUNNING:
               // S: Start experiment
               if (sys_state == STATE_READY && rx_cmd[0] == 'S') {
+                  HAL_TIM_Base_Stop(&htim6);
+
+                  __HAL_DAC_CLEAR_FLAG(&hdac1, DAC_FLAG_DMAUDR2);
+
+                  WRITE_REG(DMA1->IFCR, DMA_IFCR_CTCIF2 | DMA_IFCR_CHTIF2 | DMA_IFCR_CTEIF2 | DMA_IFCR_CGIF2);                  
                   // Set DAC CH2 to output data
                   HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t*) dac_buffer, rx_header.num_points, DAC_ALIGN_12B_R);
                   HAL_TIM_Base_Start(&htim6);
@@ -447,7 +456,7 @@ static void MX_DAC1_Init(void)
   sConfig.DAC_DMADoubleDataMode = DISABLE;
   sConfig.DAC_SignedFormat = DISABLE;
   sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
-  sConfig.DAC_Trigger = DAC_TRIGGER_SOFTWARE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
   sConfig.DAC_Trigger2 = DAC_TRIGGER_NONE;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
   sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_EXTERNAL;
